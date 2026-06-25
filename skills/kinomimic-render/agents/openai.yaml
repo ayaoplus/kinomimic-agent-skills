@@ -1,0 +1,5 @@
+interface:
+  display_name: "KinoMimic Render"
+  short_description: "通过可替换供应商渲染、查询和下载AI视频"
+  default_prompt: "Use $kinomimic-render to render this validated KinoMimic plan and save the video locally."
+

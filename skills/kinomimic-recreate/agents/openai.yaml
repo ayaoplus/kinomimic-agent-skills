@@ -1,0 +1,5 @@
+interface:
+  display_name: "KinoMimic Recreate"
+  short_description: "拆解完整参考视频并生成结构忠实的复刻计划"
+  default_prompt: "Use $kinomimic-recreate to analyze this complete reference video and create a validated KinoMimic generation plan."
+
