@@ -53,7 +53,7 @@ Project-local installation:
 Ask your Agent:
 
 ```text
-Use $kinomimic-recreate to analyze this complete video and create a faithful generation plan.
+Use $kinomimic-recreate to analyze this complete video, apply my requirements, output the shot script for review, and create a faithful generation plan.
 Then use $kinomimic-render to render the confirmed plan.
 ```
 
@@ -61,10 +61,17 @@ Or call scripts directly:
 
 ```bash
 python3 skills/kinomimic-recreate/scripts/kinomimic_recreate.py prepare input.mp4 \
-  --output-dir ./project
+  --output-dir ./project \
+  --requirement "Change the presenter to a middle-aged woman"
 
 python3 skills/kinomimic-render/scripts/kinomimic_render.py render-plan \
   ./project/generation-plan.json
+```
+
+Check authentication source without printing secrets:
+
+```bash
+python3 skills/kinomimic-render/scripts/kinomimic_render.py auth-status
 ```
 
 ## Security
@@ -78,4 +85,3 @@ The Skill folders follow the open [Agent Skills specification](https://agentskil
 ## License
 
 MIT
-

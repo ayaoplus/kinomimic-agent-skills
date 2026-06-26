@@ -23,6 +23,13 @@ export KINOMIMIC_PROVIDER=volcengine-ark
 export KINOMIMIC_API_KEY="..."
 ```
 
+macOS secret storage:
+
+- store: `python3 scripts/kinomimic_render.py auth-store`
+- inspect source without revealing key: `python3 scripts/kinomimic_render.py auth-status`
+- Keychain service/account: `kinomimic-render` / `KINOMIMIC_API_KEY`
+- lookup order: environment variables first, Keychain second, legacy service names last
+
 Current model constraints include:
 
 - duration: 4–15 seconds or `-1`
@@ -32,4 +39,3 @@ Current model constraints include:
 - video: public URL or asset ID
 
 Add future providers as adapters while preserving the plan protocol and CLI commands.
-

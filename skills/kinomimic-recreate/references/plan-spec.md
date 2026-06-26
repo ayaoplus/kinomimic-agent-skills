@@ -15,6 +15,24 @@ Use `kinomimic.plan/v1` as the stable boundary between analysis and rendering.
     "may_change": [],
     "uncertain_facts": []
   },
+  "adaptation": {
+    "user_requirements": [],
+    "conflicts": [],
+    "resolution": []
+  },
+  "script": {
+    "overview": "",
+    "segments": [],
+    "shots": [
+      {
+        "number": 1,
+        "time": "0.0-1.0s",
+        "visual_prompt": "【景别，运镜】中文画面描述。",
+        "voice": ""
+      }
+    ],
+    "render_prompt": ""
+  },
   "inputs": {
     "reference_images": [],
     "reference_videos": [],
@@ -49,14 +67,29 @@ Describe the complete video chronologically. For each segment specify:
 
 Do not omit a comparison, retest, proof, reveal, instruction step, or ending that carries the video's meaning.
 
+## Script requirements
+
+Create `recreation-script.md` before rendering and mirror its content in the optional `script` object. The script must be readable by the user without inspecting JSON.
+
+For each independent shot:
+
+- preserve the source shot order unless the user explicitly asks to change it
+- include the time range
+- start the visual prompt with `【景别，运镜】`
+- describe scene, subjects, hand state, props, action, facial/body reaction, focus, and pacing in one sentence
+- put spoken dialogue, voiceover, or lip-sync text only in the voice field
+
+When the user supplies adaptation requirements, record them under `adaptation.user_requirements`. If a requirement conflicts with source fidelity or product correctness, record the conflict and the smallest safe resolution.
+
 ## Generation gate
 
 Before rendering, confirm:
 
 - what the video is doing overall
 - the complete plot or procedure
+- the human-readable script
+- user-requested changes and how they were applied
 - roles and relationships
 - exact actions and visible success criteria
 - must-preserve sequence
 - unresolved facts
-

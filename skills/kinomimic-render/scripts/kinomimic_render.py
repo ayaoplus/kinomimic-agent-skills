@@ -31,6 +31,8 @@ KEYCHAIN_SERVICE = "kinomimic-render"
 KEYCHAIN_ACCOUNT = "KINOMIMIC_API_KEY"
 LEGACY_KEYCHAIN_SERVICE = "codex-volcengine-seedance"
 LEGACY_KEYCHAIN_ACCOUNT = "ARK_API_KEY"
+LEGACY_SEEDANCE_KEYCHAIN_SERVICE = "codex-seedance-video"
+LEGACY_SEEDANCE_KEYCHAIN_ACCOUNT = "SEEDANCE_API_KEY"
 TERMINAL_STATUSES = {"succeeded", "failed", "expired", "cancelled"}
 RATIOS = ("adaptive", "16:9", "4:3", "1:1", "3:4", "9:16", "21:9")
 RESOLUTIONS = ("480p", "720p", "1080p", "4k")
@@ -64,19 +66,41 @@ def keychain_key(service: str, account: str) -> Optional[str]:
 
 
 def api_key() -> str:
-    key = (
-        os.environ.get("KINOMIMIC_API_KEY")
-        or os.environ.get("SEEDANCE_API_KEY")
-        or os.environ.get("ARK_API_KEY")
-        or keychain_key(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
-        or keychain_key(LEGACY_KEYCHAIN_SERVICE, LEGACY_KEYCHAIN_ACCOUNT)
-    )
+    key = api_key_source()["value"]
     if not key:
         raise KinoMimicRenderError(
             "No API key found. Set KINOMIMIC_API_KEY. The Volcengine adapter "
-            "also accepts SEEDANCE_API_KEY or ARK_API_KEY."
+            "also accepts SEEDANCE_API_KEY or ARK_API_KEY. On macOS, run "
+            "`auth-store` to save it in Keychain."
         )
     return key
+
+
+def api_key_source() -> Dict[str, Any]:
+    for name in ("KINOMIMIC_API_KEY", "SEEDANCE_API_KEY", "ARK_API_KEY"):
+        value = os.environ.get(name)
+        if value:
+            return {
+                "found": True,
+                "source": "environment",
+                "name": name,
+                "value": value,
+            }
+    for service, account in (
+        (KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT),
+        (LEGACY_KEYCHAIN_SERVICE, LEGACY_KEYCHAIN_ACCOUNT),
+        (LEGACY_SEEDANCE_KEYCHAIN_SERVICE, LEGACY_SEEDANCE_KEYCHAIN_ACCOUNT),
+    ):
+        value = keychain_key(service, account)
+        if value:
+            return {
+                "found": True,
+                "source": "macos-keychain",
+                "service": service,
+                "account": account,
+                "value": value,
+            }
+    return {"found": False, "source": None, "value": None}
 
 
 def request_json(
@@ -377,6 +401,16 @@ def command_auth_store(_: argparse.Namespace) -> Dict[str, Any]:
     return {"stored": True, "service": KEYCHAIN_SERVICE, "account": KEYCHAIN_ACCOUNT}
 
 
+def command_auth_status(_: argparse.Namespace) -> Dict[str, Any]:
+    source = api_key_source()
+    redacted = {key: value for key, value in source.items() if key != "value"}
+    redacted["provider"] = PROVIDER
+    redacted["base_url"] = BASE_URL
+    redacted["model"] = DEFAULT_MODEL
+    redacted["key_is_redacted"] = bool(source.get("value"))
+    return redacted
+
+
 def command_create(args: argparse.Namespace) -> Dict[str, Any]:
     if PROVIDER != "volcengine-ark":
         raise KinoMimicRenderError(
@@ -490,6 +524,11 @@ def parser() -> argparse.ArgumentParser:
         "auth-store", help="Store KINOMIMIC_API_KEY in macOS Keychain."
     )
     auth.set_defaults(handler=command_auth_store)
+
+    auth_status = sub.add_parser(
+        "auth-status", help="Report where the API key will be read from without printing it."
+    )
+    auth_status.set_defaults(handler=command_auth_status)
 
     render = sub.add_parser(
         "render-plan", help="Render a versioned kinomimic.plan/v1 file."

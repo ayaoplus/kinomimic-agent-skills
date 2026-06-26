@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 from typing import Any, Dict, List
 
 
@@ -179,12 +180,25 @@ def prepare(args: argparse.Namespace) -> Dict[str, Any]:
         encoding="utf-8",
     )
 
+    requirements = "\n".join(args.requirement).strip()
+    requirements_path = root / "user-requirements.md"
+    if requirements:
+        requirements_path.write_text(requirements + "\n", encoding="utf-8")
+    elif not requirements_path.exists():
+        requirements_path.write_text(
+            "# User requirements\n\n"
+            "- Preserve the supplied video as the complete reference; do not auto-trim.\n"
+            "- Add requested role, product, scene, language, or shot-level changes here before planning.\n",
+            encoding="utf-8",
+        )
+
     template = {
         "schema": "kinomimic.analysis/v1",
         "source": {
             "path": str(source),
             "duration": duration,
         },
+        "user_requirements": requirements,
         "summary": "",
         "content_type": "",
         "narrative_structure": "",
@@ -202,11 +216,37 @@ def prepare(args: argparse.Namespace) -> Dict[str, Any]:
         json.dumps(template, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    script_template_path = root / "recreation-script.template.md"
+    if not script_template_path.exists():
+        script_template_path.write_text(
+            "# Recreation script\n\n"
+            "## 1. Video overview\n\n"
+            "One sentence covering the core content, proof/action chain, main scene, and pacing.\n\n"
+            "## 2. Adaptation blueprint\n\n"
+            "- User requirements:\n"
+            "  - ...\n"
+            "- Must preserve:\n"
+            "  - ...\n"
+            "- May change:\n"
+            "  - ...\n"
+            "- Uncertain facts to confirm:\n"
+            "  - ...\n\n"
+            "## 3. Shot script\n\n"
+            "Write every independent shot in source order. Do not add, delete, or reorder shots unless the user explicitly asks.\n\n"
+            "| # | Time | Visual prompt | Voice / spoken line |\n"
+            "|---|---:|---|---|\n"
+            "| 1 | 0.0-0.0s | 中文一句话：以【景别，运镜】开头，包含场景、人物/手部状态、关键道具、动作、表情反应、画面焦点、节奏。 | 留空或写目标语言台词 |\n\n"
+            "## 4. Render prompt\n\n"
+            "Condense the shot script into one chronological provider prompt for `generation.prompt`.\n",
+            encoding="utf-8",
+        )
     return {
         "project_dir": str(root),
         "media_analysis": str(media_path),
         "storyboard": str(analysis / "storyboard.jpg"),
         "analysis_template": str(template_path),
+        "user_requirements": str(requirements_path),
+        "script_template": str(script_template_path),
     }
 
 
@@ -222,6 +262,13 @@ def validate_plan_data(plan: Dict[str, Any]) -> None:
     inputs = plan.get("inputs") or {}
     if not isinstance(inputs.get("reference_images", []), list):
         raise KinoMimicError("inputs.reference_images must be a list.")
+    script = plan.get("script")
+    if script is not None:
+        if not isinstance(script, dict):
+            raise KinoMimicError("script must be an object when present.")
+        shots = script.get("shots", [])
+        if not isinstance(shots, list):
+            raise KinoMimicError("script.shots must be a list when present.")
 
 
 def validate_plan(args: argparse.Namespace) -> Dict[str, Any]:
@@ -243,6 +290,12 @@ def build_parser() -> argparse.ArgumentParser:
     prepare_parser.add_argument("source")
     prepare_parser.add_argument("--frames-per-second", type=float, default=2)
     prepare_parser.add_argument("--output-dir", required=True)
+    prepare_parser.add_argument(
+        "--requirement",
+        action="append",
+        default=[],
+        help="User adaptation requirement to preserve in user-requirements.md.",
+    )
     prepare_parser.set_defaults(handler=prepare)
 
     validate_parser = sub.add_parser(

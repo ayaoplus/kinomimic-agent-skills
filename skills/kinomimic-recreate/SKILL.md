@@ -19,25 +19,58 @@ Requires Python 3.9+, ffmpeg and ffprobe. Tesseract is optional for OCR. Generat
 
 ```bash
 python3 scripts/kinomimic_recreate.py prepare SOURCE_VIDEO \
-  --output-dir PROJECT_DIR
+  --output-dir PROJECT_DIR \
+  --requirement "Replace the original product with the supplied product image"
 ```
 
 2. Inspect `source-analysis/storyboard.jpg`.
 3. Read `source-analysis/media-analysis.json` and `source-analysis/ocr.txt`.
-4. Analyze three layers:
+4. Read `user-requirements.md`. Treat these as explicit user constraints for role, product, scene, language, shot-level, or style changes.
+5. Analyze three layers:
    - visual: shots, framing, camera, staging, hands, props, actions, timing, audio
    - semantic: identities by role, relationships, cause and effect, tests, results
    - intent: narrative function, teaching logic, proof chain, sales logic, payoff
-5. Record facts in `analysis.json`. Mark uncertainty instead of guessing.
-6. Confirm critical facts with the user before any paid generation.
-7. Create `generation-plan.json` following [references/plan-spec.md](references/plan-spec.md).
-8. Validate it:
+6. Record facts in `analysis.json`. Mark uncertainty instead of guessing.
+7. Fill `recreation-script.md` from `recreation-script.template.md` and output it to the user before rendering. The script is the human-auditable source of truth.
+8. Confirm critical facts, the shot script, and requested changes with the user before any paid generation.
+9. Create `generation-plan.json` following [references/plan-spec.md](references/plan-spec.md). Keep the filled script in the optional `script` field and condense it into `generation.prompt`.
+10. Validate it:
 
 ```bash
 python3 scripts/kinomimic_recreate.py validate-plan generation-plan.json
 ```
 
-9. Ask the Agent to invoke `$kinomimic-render` with the validated plan. Do not hardcode another Skill's filesystem path.
+11. Ask the Agent to invoke `$kinomimic-render` with the validated plan. Do not hardcode another Skill's filesystem path.
+
+## User-directed adaptation
+
+Support natural-language requirements such as:
+
+- replace one person, role, product, scene, prop, clothing style, or spoken language
+- preserve specific shots exactly
+- remove or soften a risky action
+- change a product use action only when required for product correctness
+- modify a specific shot by number after the script is shown
+
+Apply requirements with this priority:
+
+1. legal/safety/product correctness
+2. explicit user requirements
+3. source video structure and shot order
+4. non-core appearance
+
+When a requested change conflicts with the reference video, state the conflict in the script's adaptation blueprint and make the smallest viable change.
+
+## Script output contract
+
+Always output a filled `recreation-script.md` or equivalent Markdown before rendering. Include:
+
+1. video overview: one concise sentence
+2. adaptation blueprint: user requirements, preserved elements, changed elements, unresolved facts
+3. shot script: every independent shot in source order
+4. render prompt: condensed chronological prompt used in `generation.prompt`
+
+For each shot, include time range, visual prompt, and voice/spoken line. Start the visual prompt with framing and camera movement, such as `【特写，缓慢推镜头】`. Use Chinese visual descriptions by default unless the user asks for another language. Leave voice blank when no speech is needed.
 
 ## Fidelity priority
 

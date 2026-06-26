@@ -25,6 +25,7 @@ The default behavior creates a billable task, polls it, downloads the result, an
 ## Task operations
 
 ```bash
+python3 scripts/kinomimic_render.py auth-status
 python3 scripts/kinomimic_render.py get TASK_ID
 python3 scripts/kinomimic_render.py wait TASK_ID --download
 python3 scripts/kinomimic_render.py list --status succeeded
@@ -40,6 +41,15 @@ export KINOMIMIC_PROVIDER=volcengine-ark
 export KINOMIMIC_API_KEY="..."
 ```
 
+On macOS, store the key without putting it in shell history:
+
+```bash
+python3 scripts/kinomimic_render.py auth-store
+python3 scripts/kinomimic_render.py auth-status
+```
+
+`auth-store` writes to macOS Keychain service `kinomimic-render`, account `KINOMIMIC_API_KEY`. `auth-status` reports the selected key source but never prints the key.
+
 Optional overrides:
 
 ```bash
@@ -47,7 +57,7 @@ export KINOMIMIC_BASE_URL="https://provider.example/api/v3"
 export KINOMIMIC_MODEL="provider-model-id"
 ```
 
-The Volcengine adapter also accepts legacy `SEEDANCE_API_KEY` and `ARK_API_KEY`.
+Key lookup order is: `KINOMIMIC_API_KEY`, `SEEDANCE_API_KEY`, `ARK_API_KEY`, macOS Keychain `kinomimic-render/KINOMIMIC_API_KEY`, then legacy Keychain entries.
 
 Read [references/providers.md](references/providers.md) for provider details and limits.
 

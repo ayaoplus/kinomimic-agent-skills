@@ -29,6 +29,41 @@ class PlanValidationTest(unittest.TestCase):
         with self.assertRaises(MODULE.KinoMimicError):
             MODULE.validate_plan_data({"schema": "wrong"})
 
+    def test_valid_plan_with_script(self):
+        plan = {
+            "schema": "kinomimic.plan/v1",
+            "script": {
+                "overview": "A short overview.",
+                "shots": [
+                    {
+                        "number": 1,
+                        "time": "0.0-1.0s",
+                        "visual_prompt": "【特写，缓慢推镜头】厨房里一只手拿起产品。",
+                        "voice": "",
+                    }
+                ],
+            },
+            "inputs": {"reference_images": []},
+            "generation": {
+                "prompt": "A detailed chronological prompt with enough information to render.",
+                "duration": 5,
+            },
+        }
+        MODULE.validate_plan_data(plan)
+
+    def test_invalid_script_shape(self):
+        plan = {
+            "schema": "kinomimic.plan/v1",
+            "script": {"shots": "not-a-list"},
+            "inputs": {"reference_images": []},
+            "generation": {
+                "prompt": "A detailed chronological prompt with enough information to render.",
+                "duration": 5,
+            },
+        }
+        with self.assertRaises(MODULE.KinoMimicError):
+            MODULE.validate_plan_data(plan)
+
 
 if __name__ == "__main__":
     unittest.main()
